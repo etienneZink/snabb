@@ -776,9 +776,12 @@ function report_links ()
    for i, name in ipairs(names) do
       l = link_table[name]
       local txpackets = counter.read(l.stats.txpackets)
+      counter.set(l.stats.txpackets, 0)
       local txdrop = counter.read(l.stats.txdrop)
-      print(("%20s sent on %s (loss rate: %d%%)"):format(
-            lib.comma_value(txpackets), name, loss_rate(txdrop, txpackets)))
+      counter.set(l.stats.txdrop, 0)
+      print(("%20s sent on %s (loss rate: %s (%s / %s))"):format(
+            lib.comma_value(txpackets), name, lib.comma_value(tonumber(txdrop) / (tonumber(txdrop)+ tonumber(txpackets))), 
+            lib.comma_value(txdrop), lib.comma_value(tonumber(txdrop)+ tonumber(txpackets))))
    end
 end
 

@@ -568,7 +568,8 @@ function ConnectX:new (conf)
            set(stats.rxpackets, r.rxpackets)
            set(stats.rxmcast, r.rxmcast)
            set(stats.rxbcast, r.rxbcast)
-           if self.mlx == 4 then
+           -- Tested with ConnectX-5 and counter works with it
+           if self.mlx == 4 or self.mlx == 5 then
               -- ConnectX 4 doesn't have per-queue drop stats,
               -- but this counter appears to always be zero :/
               set(stats.rxdrop, r.rxdrop)
@@ -668,26 +669,34 @@ function ConnectX:new (conf)
    local last_stats = {
       rxpackets = 0,
       rxbytes = 0,
+      rxdrop = 0,
       txpackets = 0,
-      txbytes = 0
+      txbytes = 0,
+      txdrop = 0
    }
    function self:report ()
       self:sync_stats()
       local stats = self.stats
       local txpackets = counter.read(stats.txpackets) - last_stats.txpackets
       local txbytes = counter.read(stats.txbytes) - last_stats.txbytes
+      local txdrop = counter.read(stats.txdrop) - last_stats.txdrop
       local rxpackets = counter.read(stats.rxpackets) - last_stats.rxpackets
       local rxbytes = counter.read(stats.rxbytes) - last_stats.rxbytes
+      local rxdrop = counter.read(stats.rxdrop) - last_stats.rxdrop
       last_stats.txpackets = counter.read(stats.txpackets)
       last_stats.txbytes = counter.read(stats.txbytes)
+      last_stats.txdrop = counter.read(stats.txdrop)
       last_stats.rxpackets = counter.read(stats.rxpackets)
       last_stats.rxbytes = counter.read(stats.rxbytes)
+      last_stats.rxdrop = counter.read(stats.rxdrop)
       print(pciaddress,
          "TX packets", lib.comma_value(tonumber(txpackets)),
-         "TX bytes", lib.comma_value(tonumber(txbytes)))
+         "TX bytes", lib.comma_value(tonumber(txbytes)),
+         "TX drop", lib.comma_value(tonumber(txdrop)))
       print(pciaddress,
          "RX packets", lib.comma_value(tonumber(rxpackets)),
-         "RX bytes", lib.comma_value(tonumber(rxbytes)))
+         "RX bytes", lib.comma_value(tonumber(rxbytes)),
+         "RX drop", lib.comma_value(tonumber(rxdrop)))
    end
 
    function self:sync_stats ()
@@ -1332,7 +1341,7 @@ function HCA:create_rq (cqn, pd, stride, size, doorbell, rwq, counter_set_id)
    self:command("CREATE_RQ", 0x20 + 0x30 + 0xC4, 0x0C)
       :input("opcode",        0x00, 31, 16, 0x908)
       :input("rlkey",         0x20 + 0x00, 31, 31, 1)
-      :input("vlan_strip_disable", 0x20 + 0x00, 28, 28, 1)
+      :input("vlan_strip_disable", 0x20 + 0x00, 28, 28, 0) -- 1 -> don't strip 0 -> strip
       :input("cqn",           0x20 + 0x08, 23, 0, cqn)
       :input("wq_type",       0x20 + 0x30 + 0x00, 31, 28, 1) -- cyclic
       :input("pd",            0x20 + 0x30 + 0x08, 23,  0, pd)

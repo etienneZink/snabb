@@ -21,3 +21,6 @@ __pycache__
 .images
 /lib/luajit/usr
 /src/program/programs.inc
+/src/program/basic
+/src/program/externs
+/src/program/hybrid_access
