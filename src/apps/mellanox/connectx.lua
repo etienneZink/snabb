@@ -674,6 +674,11 @@ function ConnectX:new (conf)
       txbytes = 0,
       txdrop = 0
    }
+
+   for _, q_counter in ipairs(q_counters) do
+      last_stats["rxdrop_"..q_counter.queue_id] = 0
+   end
+
    function self:report ()
       self:sync_stats()
       local stats = self.stats
@@ -697,6 +702,15 @@ function ConnectX:new (conf)
          "RX packets", lib.comma_value(tonumber(rxpackets)),
          "RX bytes", lib.comma_value(tonumber(rxbytes)),
          "RX drop", lib.comma_value(tonumber(rxdrop)))
+
+      for _, q_counter in ipairs(q_counters) do
+         local per_q_rxdrop = stats["rxdrop_"..q_counter.queue_id]
+         local rxdrop = counter.read(per_q_rxdrop) - last_stats["rxdrop_"..q_counter.queue_id]
+         last_stats["rxdrop_"..q_counter.queue_id] = counter.read(per_q_rxdrop)
+
+         print(q_counter.queue_id,
+            "RX drop", lib.comma_value(tonumber(rxdrop)))
+      end
    end
 
    function self:sync_stats ()
